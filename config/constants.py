@@ -30,8 +30,12 @@ AGENT_TIMEOUT = int(os.getenv('AGENT_TIMEOUT', '120'))
 DOCKER_IMAGE = os.getenv('DOCKER_IMAGE', 'python:3.11-slim')
 USE_DOCKER = os.getenv('USE_DOCKER', 'true').lower() == 'true'
 DOCKER_TIMEOUT = int(os.getenv('DOCKER_TIMEOUT', '300'))
-WORK_DIR_DOCKER ='temp'
+DOCKER_WORK_DIR = './temp'
 TIMEOUT_DOCKER=120
+
+# Legacy naming (for backward compatibility)
+TIMEOUT_DOCKER = DOCKER_TIMEOUT
+WORK_DIR_DOCKER = DOCKER_WORK_DIR
 
 # ============================================
 # FILE HANDLING
