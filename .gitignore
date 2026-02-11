@@ -30,3 +30,12 @@ temp/
 *.log
 output*.png
 *.csv
+
+logs/
+metrics/
+cache/
+state/
+temp/
+data/
+
+

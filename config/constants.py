@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -31,7 +32,6 @@ DOCKER_IMAGE = os.getenv('DOCKER_IMAGE', 'python:3.11-slim')
 USE_DOCKER = os.getenv('USE_DOCKER', 'true').lower() == 'true'
 DOCKER_TIMEOUT = int(os.getenv('DOCKER_TIMEOUT', '300'))
 DOCKER_WORK_DIR = './temp'
-TIMEOUT_DOCKER=120
 
 # Legacy naming (for backward compatibility)
 TIMEOUT_DOCKER = DOCKER_TIMEOUT
@@ -59,6 +59,27 @@ VERBOSE_LOGGING = os.getenv('VERBOSE_LOGGING', 'false').lower() == 'true'
 STREAMLIT_PORT = int(os.getenv('STREAMLIT_PORT', '8501'))
 STREAMLIT_ADDRESS = os.getenv('STREAMLIT_ADDRESS', 'localhost')
 
-# Validate required variables
+# ============================================
+# CACHE CONFIGURATION
+# ============================================
+ENABLE_CACHE = os.getenv('ENABLE_CACHE', 'true').lower() == 'true'
+CACHE_TTL = int(os.getenv('CACHE_TTL', '3600'))
+CACHE_DIR = os.getenv('CACHE_DIR', './cache')
+
+# ============================================
+# COST TRACKING
+# ============================================
+TRACK_COSTS = os.getenv('TRACK_COSTS', 'true').lower() == 'true'
+DAILY_COST_THRESHOLD = float(os.getenv('DAILY_COST_THRESHOLD', '10.0'))
+
+# ============================================
+# CREATE REQUIRED DIRECTORIES
+# ============================================
+for _dir in [UPLOAD_DIR, OUTPUT_DIR, TEMP_DIR, CACHE_DIR, './logs', './state', './metrics']:
+    Path(_dir).mkdir(parents=True, exist_ok=True)
+
+# ============================================
+# VALIDATE REQUIRED VARIABLES
+# ============================================
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found in environment variables. Please check your .env file.")
