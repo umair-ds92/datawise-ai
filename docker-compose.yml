@@ -1,0 +1,44 @@
+version: '3.8'
+
+# ============================================
+# DataWise AI - Docker Compose
+# ============================================
+
+services:
+
+  # Streamlit Web Interface
+  streamlit:
+    build: .
+    container_name: datawise-streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./temp:/app/temp
+      - ./logs:/app/logs
+      - ./data:/app/data
+    env_file:
+      - .env
+    command: streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+    restart: unless-stopped
+
+  # FastAPI REST API
+  api:
+    build: .
+    container_name: datawise-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./temp:/app/temp
+      - ./logs:/app/logs
+      - ./data:/app/data
+    env_file:
+      - .env
+    command: python api/endpoints.py
+    restart: unless-stopped
+    depends_on:
+      - streamlit
+
+volumes:
+  temp:
+  logs:
+  data:
