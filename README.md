@@ -16,8 +16,8 @@ DataWise AI leverages AutoGen's multi-agent framework to analyze, visualize, and
 - **Secure Code Execution** - Isolated Docker environments for safety
 - **Multi-Agent Collaboration** - Coordinated teamwork for complex analysis
 - **Web & API Interfaces** - Streamlit UI and REST endpoints
-- **Cost Tracking** - Monitor API usage and expenses
-- **Enterprise Security** - Authentication, encryption, and audit logs
+- **Cost Tracking** - Monitor API usage and expenses in real-time
+- **Session State** - Continue analysis across sessions
 
 ## Quick Start
 
@@ -30,7 +30,7 @@ DataWise AI leverages AutoGen's multi-agent framework to analyze, visualize, and
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/datawise-ai.git
+git clone https://github.com/umair-ds92/datawise-ai.git
 cd datawise-ai
 
 # Create virtual environment
@@ -38,7 +38,6 @@ python3.11 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # Install dependencies
-pip install --upgrade pip
 pip install -r requirements.txt
 
 # Configure environment
@@ -49,14 +48,20 @@ cp .env.example .env
 ### Run Application
 
 ```bash
-# Web Interface
+# Web Interface (Port 8501)
 streamlit run streamlit_app.py
 
 # CLI Interface
-python main.py
+python main.py --interactive
 
-# API Server
-uvicorn api.endpoints:app --reload
+# API Server (Port 8000)
+python api/endpoints.py
+
+# Monitoring Dashboard (Port 8502)
+streamlit run monitoring/dashboard.py --server.port 8502
+
+# Docker (All services)
+docker-compose up
 ```
 
 ## Project Structure
@@ -65,32 +70,45 @@ uvicorn api.endpoints:app --reload
 datawise-ai/
 ├── config/               # Configuration and settings
 ├── agents/               # AI agent definitions
+│   ├── Data_Analyzer_agent.py
+│   ├── Code_Executor_agent.py
+│   ├── Visualization_agent.py
+│   └── Statistics_agent.py
 ├── team/                 # Multi-agent orchestration
-├── utils/                # Shared utilities
+│   ├── analyzer_gpt.py
+│   ├── selector.py
+│   ├── termination_conditions.py
+│   └── handoffs.py
+├── utils/                # Utilities
+│   ├── logging.py
+│   ├── state_manager.py
+│   ├── file_handler.py
+│   ├── validators.py
+│   ├── error_handlers.py
+│   ├── cache.py
+│   └── metrics.py
 ├── api/                  # REST API endpoints
-├── monitoring/           # Observability tools
+├── monitoring/           # Monitoring dashboard
 ├── tests/                # Test suite
-├── data/                 # Data storage
+├── data/                 # Data storage (uploads/outputs)
 ├── main.py               # CLI entry point
 ├── streamlit_app.py      # Web interface
 ├── requirements.txt      # Dependencies
-├── docker-compose.yml    # Container setup
-├── Dockerfile            # Container image
-├── .env.example          # Environment template
-└── README.md             # Documentation
+├── docker-compose.yml    # Multi-container setup
+└── Dockerfile            # Container image
 ```
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        User Interface                        │
-│              (Streamlit / CLI / REST API)                    │
+│                        User Interface                       │
+│              (Streamlit / CLI / REST API)                   │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Team Orchestration                         │
+│                   Team Orchestration                        │
 │         ┌──────────────────────────────────┐                │
 │         │   DataAnalyzer Team (GroupChat)  │                │
 │         └──────────────────────────────────┘                │
@@ -113,52 +131,51 @@ datawise-ai/
                        │
                        ▼
            ┌───────────────────────┐
-           │   OpenAI GPT-4        │
+           │   OpenAI GPT-4o       │
            │   (Language Model)    │
            └───────────────────────┘
 ```
 
-### Agent Workflow
-
-```
-User Query → Data Analyzer (Plans) → Code Executor (Runs Analysis)
-                ↓                           ↓
-         Statistics Agent          Visualization Agent
-                ↓                           ↓
-         Results → Report Generator → User
-```
-
 ## Technology Stack
 
-- **Framework**: [AutoGen](https://github.com/microsoft/autogen) - Multi-agent orchestration
-- **LLM**: OpenAI GPT-4 / GPT-4o
+- **Framework**: [AutoGen 0.7.5](https://github.com/microsoft/autogen) - Multi-agent orchestration
+- **LLM**: OpenAI GPT-4o
 - **Execution**: Docker - Isolated code runtime
-- **Web UI**: Streamlit
-- **API**: FastAPI
-- **Data**: Pandas, NumPy
-- **Visualization**: Matplotlib, Seaborn, Plotly
-- **Testing**: Pytest
+- **Web UI**: Streamlit 1.41.1
+- **API**: FastAPI + Uvicorn
+- **Data**: Pandas 2.2.3, NumPy 2.2.1
+- **Visualization**: Matplotlib 3.10.0, Seaborn 0.13.2, Plotly
+- **Testing**: Pytest 8.0+
 
 ## Usage Examples
 
-### CLI Example
+### CLI Examples
 ```bash
-python main.py --file data.csv --query "Show correlation between age and income"
+# Interactive mode
+python main.py --interactive
+
+# Single task
+python main.py --task "Show correlation between age and salary" --file data/sales.csv
+
+# Help
+python main.py --help
 ```
 
-### Python API Example
-```python
-from team.analyzer_gpt import getDataAnalyzerTeam
-from config.openai_model_client import get_model_client
+### REST API Examples
+```bash
+# Upload file
+curl -X POST http://localhost:8000/upload -F "file=@data.csv"
 
-async def analyze():
-    client = get_model_client()
-    team = getDataAnalyzerTeam(client)
-    
-    result = await team.run(
-        task="Analyze sales trends by region"
-    )
-    print(result)
+# Start analysis
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"task":"Calculate mean of all numeric columns"}'
+
+# Check job status
+curl http://localhost:8000/jobs/{job_id}
+
+# Get metrics
+curl http://localhost:8000/metrics
 ```
 
 ### Web Interface
@@ -175,9 +192,46 @@ pytest
 
 # Run specific test suite
 pytest tests/test_agents.py -v
+pytest tests/test_team.py -v
+pytest tests/test_utils.py -v
+pytest tests/test_integration.py -v
 
 # Run with coverage
 pytest --cov=. --cov-report=html
+```
+
+## Docker Deployment
+
+```bash
+# Build image
+docker build -t datawise-ai .
+
+# Run with Docker Compose
+docker-compose up -d
+
+# Access services:
+# - Streamlit: http://localhost:8501
+# - API: http://localhost:8000
+# - API Docs: http://localhost:8000/docs
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+## Configuration
+
+Key environment variables in `.env`:
+
+```bash
+OPENAI_API_KEY=sk-...           # Required
+MODEL_NAME=gpt-4o               # Model to use
+MAX_ROUNDS=15                   # Max conversation rounds
+ENABLE_CACHE=true               # Cache analysis results
+TRACK_COSTS=true                # Track API costs
+DAILY_COST_THRESHOLD=10.0       # Cost alert threshold
 ```
 
 ## License
